@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DEGIRO - Pythagoras</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <nav class="nav"><a href="/">Dashboard</a><a href="/menu">Menu</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/environment">Environment</a><a href="/config/genai">GenAI config</a></nav>
+    <header class="hero"><div><p class="eyebrow">DEGIRO</p><h1>Upload DEGIRO extracts</h1><p class="muted">Upload account statement, transaction statement, or portfolio overview CSV files.</p></div></header>
+    <section class="grid two">
+      <article class="panel"><h2>Upload CSV</h2><form method="post" action="/upload/degiro" enctype="multipart/form-data" class="stack"><select name="report_type"><option value="portfolio">Portfolio overview</option><option value="account">Account statement</option><option value="transactions">Transaction statement</option></select><input type="file" name="file" accept=".csv" required><button>Upload extract</button></form></article>
+      <article class="panel"><h2>Loaded files</h2><ul class="status">{% for file in files %}<li>{{ file.name }}</li>{% else %}<li>No DEGIRO CSV files uploaded yet.</li>{% endfor %}</ul></article>
+    </section>
+  </main>
+</body>
+</html>

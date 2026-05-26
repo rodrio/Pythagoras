@@ -2,6 +2,9 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 .shell { max-width: 1440px; margin: 0 auto; padding: 32px; }
+.nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.nav a { color: #172033; text-decoration: none; background: white; border: 1px solid #d7deea; border-radius: 999px; padding: 10px 14px; font-weight: 800; box-shadow: 0 8px 22px rgba(15, 23, 42, .06); }
+.nav a:hover { color: #1d4ed8; border-color: #93c5fd; }
 .hero { display: flex; justify-content: space-between; gap: 24px; align-items: center; padding: 32px; border-radius: 28px; background: linear-gradient(135deg, #0f172a, #1e3a8a); color: white; box-shadow: 0 20px 50px rgba(15, 23, 42, .22); }
 h1 { margin: 0; font-size: clamp(32px, 5vw, 56px); letter-spacing: -.04em; }
 h2 { margin: 0 0 18px; font-size: 21px; }
@@ -17,6 +20,9 @@ button:hover { background: #1d4ed8; transform: translateY(-1px); }
 .card { padding: 24px; display: grid; gap: 10px; }
 .card span { color: #64748b; font-weight: 700; }
 .card strong, .big { font-size: 30px; margin: 0; letter-spacing: -.03em; }
+.link-card { color: inherit; text-decoration: none; }
+.link-card p { margin: 0; }
+.menu-cards { grid-template-columns: repeat(4, 1fr); }
 .grid { display: grid; gap: 18px; margin-bottom: 18px; }
 .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -30,4 +36,5 @@ th { color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing:
 .bars { display: grid; gap: 12px; }
 .bars div { display: flex; justify-content: space-between; padding: 14px 16px; border-radius: 16px; background: #f8fafc; }
 .answer { white-space: pre-wrap; margin-top: 18px; padding: 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; line-height: 1.55; }
-@media (max-width: 980px) { .hero, .cards, .three, .two { grid-template-columns: 1fr; display: grid; } .shell { padding: 18px; } }
+.notice { margin: 18px 0; padding: 16px 18px; border-radius: 18px; background: #dcfce7; color: #166534; font-weight: 800; }
+@media (max-width: 980px) { .hero, .cards, .menu-cards, .three, .two { grid-template-columns: 1fr; display: grid; } .shell { padding: 18px; } }

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Binance - Pythagoras</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <nav class="nav"><a href="/">Dashboard</a><a href="/menu">Menu</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/environment">Environment</a><a href="/config/genai">GenAI config</a></nav>
+    <header class="hero"><div><p class="eyebrow">Binance</p><h1>Update Binance info</h1><p class="muted">Fetch latest Binance balances using read-only API credentials.</p></div><form method="post" action="/binance/update" class="toolbar"><button>Update now</button></form></header>
+    <section class="grid two">
+      <article class="panel"><h2>Status</h2><ul class="status"><li>API key: {{ 'configured' if settings.binance_api_key else 'missing' }}</li><li>API secret: {{ 'configured' if settings.binance_api_secret else 'missing' }}</li><li>Display currency: {{ currency }}</li></ul></article>
+      <article class="panel"><h2>Cash</h2><table><thead><tr><th>Currency</th><th>Amount</th></tr></thead><tbody>{% for item in cash %}<tr><td>{{ item.currency }}</td><td>{{ '%.2f'|format(item.display_amount) }} {{ item.display_currency }}</td></tr>{% else %}<tr><td colspan="2" class="muted">No Binance cash loaded.</td></tr>{% endfor %}</tbody></table></article>
+    </section>
+    <section class="panel"><h2>Crypto holdings</h2><table><thead><tr><th>Asset</th><th>Quantity</th><th>Value</th></tr></thead><tbody>{% for item in holdings %}<tr><td>{{ item.symbol }}</td><td>{{ '%.8g'|format(item.quantity) }}</td><td>{{ '%.2f'|format(item.display_market_value) }} {{ item.display_currency }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No Binance holdings loaded.</td></tr>{% endfor %}</tbody></table></section>
+  </main>
+</body>
+</html>
