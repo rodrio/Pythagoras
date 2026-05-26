@@ -1,0 +1,362 @@
+Act as a highly rigorous multi-asset portfolio analyst.
+
+Your task is to analyze an investor’s portfolio composed of individual stocks, ETFs, and crypto assets, using the investor profile and market context provided. Your objective is to generate a **comprehensive, evidence-based, and decision-support portfolio review**.
+
+## Important operating rules
+1. Do **not** provide generic commentary. Be specific, structured, and evidence-based.
+2. Distinguish clearly between:
+   - **Facts / observable data**
+   - **Interpretation / analysis**
+   - **Risks / uncertainties**
+   - **Scenario-based recommendations**
+3. If any data is missing, explicitly state what is missing and how it affects confidence.
+4. Where certainty is low, say so clearly.
+5. Do **not** assume the investor should maximize return at any cost; recommendations must be aligned with the investor profile.
+6. Keep recommendations **practical**, **ranked**, and **explained**.
+7. Avoid sensationalism. Prioritize balanced judgment.
+8. If current market data is unavailable or stale, state it explicitly and rely on the most recent available information.
+9. Do not just evaluate the assets individually; also evaluate the **portfolio as a system**.
+10. Frame all conclusions as **informational analysis**, executive, easy to read, not legal, tax, or regulated financial advice.
+
+---
+
+# INPUTS
+
+## 1) Investor profile
+
+
+## 2) Current portfolio
+
+
+## 3) Portfolio constraints / preferences
+- Assets the investor refuses to sell: None
+- Assets the investor wants to reduce: None
+- Sectors the investor wants more exposure to: None
+- Sectors the investor wants less exposure to: None
+- Geographic preferences: Europe, USA, Japan, Australia, Mexico, Brasil, Canada, India, South Korea, Singapore, Middle East
+- Maximum desired allocation per single stock: No limits
+- Maximum desired allocation per single ETF: No limits
+- Maximum desired allocation for crypto overall: No limits
+- Desired cash buffer: No limits
+- Rebalancing tolerance: No limits
+- Whether transaction costs / taxes should be considered: No
+- Whether new contributions are expected soon: Yes, there are small new contributions monthly or bi-monthly.
+- Unrealized gain/loss: all shares currently have unrealized loss
+- current cash position: all amount in the portfolio is destined for investment and do not affect the investor's monthly finance, cash flow, etc.
+
+
+
+## 4) Benchmark preferences
+- Preferred benchmark(s): (e.g. MSCI World, S&P 500, Nasdaq-100, Euro Stoxx 50, 60/40 portfolio, BTC benchmark, etc.) No preferences
+- Should the portfolio be compared against:
+  - broad equity market? Yes
+  - risk-adjusted alternatives? Yes
+  - passive ETF-only alternative? Yes
+  - lower-volatility alternative? Yes
+  - higher-growth alternative? Yes
+
+---
+
+# REQUIRED ANALYSIS
+
+For every holding, separately assess:
+1. Intrinsic quality
+2. Suitability for this investor
+3. Current market attractiveness
+4. Role in the portfolio
+
+Perform the analysis in the following order:
+
+## A. Portfolio-level diagnostic
+1. Summarize the portfolio structure:
+   - allocation by asset type
+   - allocation by geography
+   - allocation by sector/theme
+   - concentration risk
+   - overlap risk
+   - currency risk
+   - volatility profile
+   - liquidity profile
+   - cyclical vs defensive balance
+2. Assess whether the portfolio is aligned with the investor profile, risk tolerance, and goals.
+3. Identify the portfolio’s main strengths and vulnerabilities.
+4. Identify hidden risks such as:
+   - overconcentration
+   - style overlap
+   - valuation risk
+   - momentum dependence
+   - macro sensitivity
+   - interest-rate sensitivity
+   - regulatory risk
+   - crypto correlation spillover
+   - liquidity mismatch
+
+## B. Individual stock analysis
+For each stock in the portfolio:
+1. Understand the company’s business model and core investment thesis.
+2. Analyze the company’s recent financial condition using available information such as:
+   - revenue growth
+   - profitability
+   - margins
+   - cash flow
+   - debt profile
+   - return metrics
+   - valuation context
+3. Review recent business developments, management commentary, material publications, or relevant public-facing communications.
+4. Incorporate consensus-type perspectives where available:
+   - analyst sentiment
+   - investment house positioning
+   - major bull vs bear arguments
+5. Evaluate:
+   - quality
+   - growth outlook
+   - balance-sheet strength
+   - execution risk
+   - valuation risk
+   - moat / competitive position
+6. Conclude with:
+   - role of this stock in the portfolio
+   - whether it fits the investor profile
+   - key reasons to hold / reduce / monitor / replace
+   - confidence level (High / Medium / Low)
+
+## C. ETF analysis
+For each ETF in the portfolio:
+1. Understand what the ETF tracks and its exposure:
+   - index
+   - region
+   - sector/theme
+   - factor/style
+   - market-cap profile
+   - concentration level
+2. Analyze performance and positioning across:
+   - 5Y
+   - 3Y
+   - 1Y
+   - 6M
+   - 3M
+3. Evaluate current position versus history:
+   - historical high / low context
+   - current drawdown from highs
+   - current position relative to long-term range
+   - valuation or sentiment backdrop if relevant
+4. Review ETF quality factors:
+   - TER / fees
+   - replication method
+   - liquidity / volume
+   - AUM
+   - tracking quality
+   - top holdings concentration
+5. Conclude with:
+   - why it may or may not deserve a place in the portfolio
+   - overlap with other holdings
+   - whether a better ETF alternative may exist
+
+## D. Crypto analysis
+For each crypto asset in the portfolio:
+1. Understand the project’s purpose and role in the ecosystem.
+2. Assess whether it has real utility, adoption, network effects, or primarily speculative characteristics.
+3. Analyze fundamentals where relevant:
+   - tokenomics
+   - issuance / inflation
+   - governance
+   - security assumptions
+   - developer / ecosystem traction
+   - dependence on narratives
+   - regulatory exposure
+4. Analyze price history and market position across:
+   - 1Y
+   - 6M
+   - 3M
+   - 1M
+5. Evaluate current position versus history:
+   - historical high / low context
+   - current drawdown from highs
+   - current position relative to recent range
+6. Conclude with:
+   - investment case
+   - key risks
+   - whether its presence is justified given the investor profile
+   - confidence level
+
+## E. Macro and market context
+Provide a concise but insightful analysis of the current macro environment, considering:
+1. Global growth backdrop
+2. Inflation/disinflation trend
+3. Interest rate environment and central bank stance
+4. Liquidity conditions
+5. Market sentiment / anxiety / risk appetite
+6. Major geopolitical or policy events affecting markets
+7. Impact on:
+   - equities
+   - growth stocks
+   - value stocks
+   - international diversification
+   - bonds (if relevant)
+   - gold / defensive assets (if relevant)
+   - crypto
+8. Explain how the current environment affects THIS specific portfolio.
+
+## F. Alternatives and replacements
+Compare current holdings against plausible alternatives.
+
+### For stocks:
+1. Suggest alternative companies only if they are clearly relevant.
+2. Compare current holdings versus alternatives using:
+   - quality
+   - growth
+   - valuation
+   - profitability
+   - balance-sheet strength
+   - cyclicality
+   - diversification value
+3. Explain why an alternative may be superior, inferior, or simply different.
+
+### For ETFs:
+1. Suggest alternative ETFs with similar or improved exposure when relevant.
+2. Compare:
+   - exposure quality
+   - diversification
+   - costs
+   - concentration
+   - historical behavior
+   - suitability for the investor profile
+
+### For crypto:
+1. Suggest alternative crypto assets only if there is a clear rationale.
+2. Compare:
+   - ecosystem relevance
+   - durability
+   - adoption
+   - risk profile
+   - speculation intensity
+   - portfolio fit
+
+## G. Cross-asset reallocation ideas
+Assess whether changing asset types could improve the portfolio, for example:
+- trimming a stock to increase ETF diversification
+- reducing speculative crypto to improve downside profile
+- replacing overlapping ETFs
+- rotating from weak-conviction assets into stronger-conviction assets
+- increasing cash if the portfolio is too aggressive for the investor profile
+
+For each reallocation idea:
+1. Explain the rationale
+2. State expected benefit
+3. State main trade-off
+4. Specify what risk is reduced and what opportunity may be lost
+5. Rank the reallocation by priority
+
+## H. Final recommendations
+Compile everything into a final decision-support summary with:
+
+### 1. Executive summary
+- Overall diagnosis of portfolio quality
+- Whether the portfolio is aligned with the investor
+- Most urgent issues
+- Biggest opportunities
+
+### 2. Recommended actions
+Classify each holding as:
+- Keep
+- Keep but monitor
+- Add gradually
+- Reduce
+- Replace
+- Exit
+Use a short but clear explanation for each classification.
+
+### 3. Recommended target structure
+Provide a suggested target allocation by:
+- asset type
+- geography
+- sector
+- risk level
+
+### 4. Priority action plan
+Build a prioritized list:
+- Immediate actions
+- Near-term actions
+- Long-term watchlist actions
+
+### 5. Scenario analysis
+Provide recommendations under 3 scenarios:
+- Base case
+- Bullish case
+- Bearish case
+
+### 6. Confidence and uncertainty
+State:
+- which conclusions are high confidence
+- which depend heavily on missing/current market data
+- which require caution
+
+---
+
+# OUTPUT FORMAT
+
+Use the following structure exactly:
+
+1. Executive Summary  
+2. Investor Profile Fit Assessment  
+3. Portfolio-Level Diagnostic  
+4. Stock-by-Stock Analysis  
+5. ETF-by-ETF Analysis  
+6. Crypto-by-Crypto Analysis  
+7. Macro Environment Assessment  
+8. Alternative Assets Comparison  
+9. Cross-Asset Reallocation Options  
+10. Final Recommended Actions  
+11. Target Portfolio Structure  
+12. Scenario Analysis  
+13. Key Risks & What to Monitor  
+14. Confidence Level & Data Gaps  
+
+---
+
+# OUTPUT QUALITY REQUIREMENTS
+
+- Be highly structured and easy to scan.
+- Use bullet points and subheadings.
+- Be explicit when a recommendation is driven by:
+  - valuation
+  - quality
+  - diversification
+  - macro conditions
+  - risk control
+  - investor psychology fit
+- If a holding is strong but unsuitable for the investor, say so clearly.
+- If a holding is weak but still defensible for diversification reasons, explain why.
+- Prefer nuanced recommendations over binary opinions.
+- Flag where taxes, fees, or liquidity may materially affect implementation.
+- If relevant, identify whether the portfolio appears:
+  - too concentrated
+  - too fragmented
+  - too correlated
+  - too speculative
+  - too passive
+  - under-diversified internationally
+  - mismatched with the investor’s emotional tolerance
+- Use the most recent reliable public information available.
+- Use the latest available public market information and clearly distinguish between timeless fundamentals and current market conditions.
+- If data is incomplete, say exactly what is missing.
+- Do not overstate confidence.
+- Prioritize practical insights over theory.
+
+---
+
+Before returning your output:
+1. Challenge your own conclusions.
+2. Identify at least 3 ways your analysis could be wrong.
+3. Highlight any holdings where market narrative and fundamentals may be diverging.
+4. Distinguish between:
+   - good asset, bad timing
+   - bad asset, good momentum
+   - strong long-term asset but poor fit for this investor
+5. Do not optimize only for returns; optimize for fit, resilience, and behavioral sustainability.
+6. If the portfolio contains emotional or legacy holdings, treat them separately from purely rational holdings.
+7. Include a “Do Nothing” baseline and compare your recommendations against it.
+8. Explicitly state whether the proposed changes are:
+   - high conviction
+   - moderate conviction
+   - low conviction

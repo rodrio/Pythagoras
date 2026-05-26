@@ -7,8 +7,21 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+  <div class="topbar">
+    <button class="hamburger" onclick="document.getElementById('menu-overlay').classList.toggle('open')">☰</button>
+    <span class="brand">Pythagoras</span>
+  </div>
+  <div id="menu-overlay" class="menu-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="menu-panel">
+      <a href="/">Dashboard</a>
+      <a href="/binance">Binance</a>
+      <a href="/degiro">DEGIRO</a>
+      <a href="/environment">Environment</a>
+      <a href="/config/genai">GenAI config</a>
+      <a href="/version-log">Version log</a>
+    </div>
+  </div>
   <main class="shell">
-    <nav class="nav"><a href="/">Dashboard</a><a href="/menu">Menu</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/environment">Environment</a><a href="/config/genai">GenAI config</a></nav>
     <header class="hero"><div><p class="eyebrow">DEGIRO</p><h1>Upload DEGIRO extracts</h1><p class="muted">Upload account statement, transaction statement, or portfolio overview CSV files.</p></div></header>
     <section class="grid two">
       <article class="panel"><h2>Upload CSV</h2><form method="post" action="/upload/degiro" enctype="multipart/form-data" class="stack"><select name="report_type"><option value="portfolio">Portfolio overview</option><option value="account">Account statement</option><option value="transactions">Transaction statement</option></select><input type="file" name="file" accept=".csv" required><button>Upload extract</button></form></article>

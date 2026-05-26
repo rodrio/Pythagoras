@@ -97,12 +97,13 @@ On Render:
 
 ## Version log
 
-- MVP v0.1 first deploy
-- MVP v0.2 added a menu to manage sources and GenAI
-- MVP v0.3 added executive version log accessible from the menu
-- MVP v0.4 fixed local loading and template compatibility
-- MVP v0.5 refined environment visibility, GenAI model suggestions, and dashboard layout
-- MVP v0.6 ensured Render environment variables take priority over .env values
+- MVP v0.3.4 Automated GenAI insights and persistent portfolio chat
+- MVP v0.3.3 Env vars adjustments
+- MVP v0.3.2 UX improvements
+- MVP v0.3.1 Code corrections
+- MVP v0.3 added version log
+- MVP v0.2 extending the draft
+- MVP v0.1 MVP initial draft
 
 Future changes should update the version log with a concise executive entry.
 

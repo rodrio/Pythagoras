@@ -5,10 +5,13 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Only load .env when the file exists locally.
-# On Render (and other platforms), environment variables take priority.
-_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
-_ENV_FILE_PATH = str(_ENV_FILE) if _ENV_FILE.exists() else None
+# Default .env path (only loaded when file exists locally).
+# On Render and other platforms, environment variables take priority.
+_DEFAULT_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+_DEFAULT_ENV_FILE_PATH = str(_DEFAULT_ENV_FILE) if _DEFAULT_ENV_FILE.exists() else None
+
+# Optional override path set from the environment page.
+_CUSTOM_ENV_FILE: str | None = None
 
 
 class Settings(BaseSettings):
@@ -32,12 +35,22 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = Field(default=None, repr=False)
 
     exchangerate_host_url: str = "https://api.exchangerate.host"
-
-    # pydantic-settings v2: environment variables always override .env file values.
-    # When _ENV_FILE_PATH is None (e.g., on Render), only environment variables are used.
-    model_config = SettingsConfigDict(env_file=_ENV_FILE_PATH, env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore")
 
 
 @lru_cache
-def get_settings() -> Settings:
+def _get_settings_impl() -> Settings:
+    env_file = _CUSTOM_ENV_FILE or _DEFAULT_ENV_FILE_PATH
+    if env_file:
+        return Settings(_env_file=env_file, _env_file_encoding="utf-8")
     return Settings()
+
+
+def get_settings() -> Settings:
+    return _get_settings_impl()
+
+
+def set_env_file(path: str | None) -> None:
+    global _CUSTOM_ENV_FILE
+    _CUSTOM_ENV_FILE = path
+    _get_settings_impl.cache_clear()

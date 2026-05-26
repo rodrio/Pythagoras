@@ -7,10 +7,36 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+  <div class="topbar">
+    <button class="hamburger" onclick="document.getElementById('menu-overlay').classList.toggle('open')">☰</button>
+    <span class="brand">Pythagoras</span>
+  </div>
+  <div id="menu-overlay" class="menu-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="menu-panel">
+      <a href="/">Dashboard</a>
+      <a href="/binance">Binance</a>
+      <a href="/degiro">DEGIRO</a>
+      <a href="/environment">Environment</a>
+      <a href="/config/genai">GenAI config</a>
+      <a href="/version-log">Version log</a>
+    </div>
+  </div>
   <main class="shell">
-    <nav class="nav"><a href="/">Dashboard</a><a href="/menu">Menu</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/environment">Environment</a><a href="/config/genai">GenAI config</a><a href="/version-log">Version log</a></nav>
-    <header class="hero"><div><p class="eyebrow">Environment</p><h1>Detected variables</h1><p class="muted">Shows whether each expected variable is detected or missing. Values are never displayed.</p></div></header>
-    <section class="panel"><table><thead><tr><th>Variable</th><th>Status</th></tr></thead><tbody>{% for variable in variables %}<tr><td>{{ variable.name }}</td><td>{{ variable.status }}</td></tr>{% endfor %}</tbody></table></section>
+    <header class="hero"><div><p class="eyebrow">Environment</p><h1>Detected variables</h1><p class="muted">Shows the detected variables.
+    </p></div></header>
+    <section class="grid two">
+      <article class="panel">
+        <h2>Environment file path</h2>
+        <form method="post" action="/environment" class="stack">
+          <input name="env_file" value="{{ env_file }}" placeholder="/path/to/.env" required>
+          <button>Set .env file</button>
+        </form>
+        <p class="muted">Provide the absolute path to a .env file. The app will reload settings from that file. Render environment variables still take priority.</p>
+        {% if saved == False %}<p class="notice" style="background:#fee2e2;color:#991b1b;margin-top:12px;">File not found. Path unchanged.</p>{% endif %}
+        {% if saved %}<p class="notice" style="margin-top:12px;">Settings reloaded from the provided file.</p>{% endif %}
+      </article>
+      <article class="panel"><h2>Detected variables</h2><table><thead><tr><th>Variable</th><th>Status</th></tr></thead><tbody>{% for variable in variables %}<tr><td>{{ variable.name }}</td><td>{{ variable.status }}</td></tr>{% endfor %}</tbody></table></article>
+    </section>
   </main>
 </body>
 </html>

@@ -10,7 +10,7 @@ from app.currency import CurrencyConverter
 from app.genai import GenAIService
 from app.portfolio import PortfolioService
 from app.providers import BinanceProvider, DegiroCsvProvider
-from app.settings import get_settings
+from app.settings import get_settings, set_env_file
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -73,7 +73,8 @@ def update_env_file(updates: dict[str, str]) -> None:
         if key not in updated_keys:
             lines.append(f"{key}={value}")
     ENV_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    get_settings.cache_clear()
+    from app.settings import _get_settings_impl
+    _get_settings_impl.cache_clear()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -82,27 +83,24 @@ async def dashboard(request: Request, currency: str | None = None):
     portfolio, _, genai = services()
     display_currency = currency or settings.default_display_currency
     data = await portfolio.dashboard(display_currency)
+    chat_answer = await genai.insights(data)
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
-        context={"data": data, "settings": settings, "genai_configured": genai.configured},
+        context={"data": data, "settings": settings, "genai_configured": genai.configured, "chat_message": "Automatic recommendations and insights", "chat_answer": chat_answer},
     )
-
-
-@app.get("/menu", response_class=HTMLResponse)
-async def menu(request: Request):
-    return templates.TemplateResponse(request=request, name="menu.html")
 
 
 @app.get("/version-log", response_class=HTMLResponse)
 async def version_log(request: Request):
     entries = [
-        "MVP v0.1 first deploy",
-        "MVP v0.2 added a menu to manage sources and GenAI",
-        "MVP v0.3 added executive version log accessible from the menu",
-        "MVP v0.4 fixed local loading and template compatibility",
-        "MVP v0.5 refined environment visibility, GenAI model suggestions, and dashboard layout",
-        "MVP v0.6 ensured Render environment variables take priority over .env values",
+        "MVP v0.3.4 Automated GenAI insights and persistent portfolio chat",
+        "MVP v0.3.3 Env vars adjustments",
+        "MVP v0.3.2 UX improvements",
+        "MVP v0.3.1 Code corrections",
+        "MVP v0.3 added version log",
+        "MVP v0.2 extending the draft",
+        "MVP v0.1 MVP initial draft",
     ]
     return templates.TemplateResponse(request=request, name="version_log.html", context={"entries": entries})
 
@@ -138,8 +136,23 @@ async def upload_degiro(report_type: str = Form(...), file: UploadFile = File(..
 
 
 @app.get("/environment", response_class=HTMLResponse)
-async def environment_page(request: Request):
-    return templates.TemplateResponse(request=request, name="environment.html", context={"variables": masked_environment()})
+async def environment_page(request: Request, saved: str | None = None):
+    from app.settings import _CUSTOM_ENV_FILE, _DEFAULT_ENV_FILE_PATH
+    env_file = _CUSTOM_ENV_FILE or _DEFAULT_ENV_FILE_PATH or ""
+    return templates.TemplateResponse(
+        request=request,
+        name="environment.html",
+        context={"variables": masked_environment(), "env_file": env_file, "saved": saved == "1"},
+    )
+
+
+@app.post("/environment")
+async def save_env_file(env_file: str = Form(...)):
+    path = Path(env_file.strip())
+    if not path.exists():
+        return RedirectResponse("/environment?saved=0", status_code=303)
+    set_env_file(str(path))
+    return RedirectResponse("/environment?saved=1", status_code=303)
 
 
 @app.get("/config/genai", response_class=HTMLResponse)
