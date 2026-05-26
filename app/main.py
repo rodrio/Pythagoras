@@ -29,8 +29,8 @@ def services() -> tuple[PortfolioService, DegiroCsvProvider, GenAIService]:
 
 
 def masked_environment() -> list[dict[str, str]]:
-    settings = get_settings()
-    sensitive = {"APP_SECRET_KEY", "BINANCE_API_KEY", "BINANCE_API_SECRET", "GOOGLE_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"}
+    # Check actual environment variables only (Render / shell).
+    # .env file values are intentionally not shown here so env vars take priority.
     names = [
         "APP_ENV",
         "DEFAULT_DISPLAY_CURRENCY",
@@ -48,14 +48,10 @@ def masked_environment() -> list[dict[str, str]]:
         "ANTHROPIC_API_KEY",
         "EXCHANGERATE_HOST_URL",
     ]
-    values = settings.model_dump()
     rows: list[dict[str, str]] = []
     for name in names:
-        value = os.getenv(name)
-        if value is None:
-            value = values.get(name.lower())
-        detected = value not in (None, "")
-        rows.append({"name": name, "status": "detected" if detected else "missing", "value": "configured" if name in sensitive and detected else str(value or "")})
+        detected = os.getenv(name) not in (None, "")
+        rows.append({"name": name, "status": "detected" if detected else "missing"})
     return rows
 
 
@@ -106,6 +102,7 @@ async def version_log(request: Request):
         "MVP v0.3 added executive version log accessible from the menu",
         "MVP v0.4 fixed local loading and template compatibility",
         "MVP v0.5 refined environment visibility, GenAI model suggestions, and dashboard layout",
+        "MVP v0.6 ensured Render environment variables take priority over .env values",
     ]
     return templates.TemplateResponse(request=request, name="version_log.html", context={"entries": entries})
 

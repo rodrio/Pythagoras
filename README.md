@@ -43,6 +43,8 @@ Open `http://127.0.0.1:8000`.
 
 Edit `.env` locally or set these values in Render:
 
+> **Environment variable priority:** Render environment variables always take priority over `.env` file values. The app only loads `.env` when the file exists locally; on Render (where `.env` is excluded by `.gitignore`), only environment variables are used.
+
 - `BINANCE_API_KEY`
 - `BINANCE_API_SECRET`
 - `GENAI_PROVIDER`: `disabled`, `google`, `openai`, or `anthropic`
@@ -100,6 +102,7 @@ On Render:
 - MVP v0.3 added executive version log accessible from the menu
 - MVP v0.4 fixed local loading and template compatibility
 - MVP v0.5 refined environment visibility, GenAI model suggestions, and dashboard layout
+- MVP v0.6 ensured Render environment variables take priority over .env values
 
 Future changes should update the version log with a concise executive entry.
 

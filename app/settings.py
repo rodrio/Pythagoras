@@ -1,8 +1,14 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Only load .env when the file exists locally.
+# On Render (and other platforms), environment variables take priority.
+_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+_ENV_FILE_PATH = str(_ENV_FILE) if _ENV_FILE.exists() else None
 
 
 class Settings(BaseSettings):
@@ -27,7 +33,9 @@ class Settings(BaseSettings):
 
     exchangerate_host_url: str = "https://api.exchangerate.host"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # pydantic-settings v2: environment variables always override .env file values.
+    # When _ENV_FILE_PATH is None (e.g., on Render), only environment variables are used.
+    model_config = SettingsConfigDict(env_file=_ENV_FILE_PATH, env_file_encoding="utf-8", extra="ignore")
 
 
 @lru_cache
