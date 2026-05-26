@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Version Log - Pythagoras</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <nav class="nav"><a href="/">Dashboard</a><a href="/menu">Menu</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/environment">Environment</a><a href="/config/genai">GenAI config</a><a href="/version-log">Version log</a></nav>
+    <header class="hero"><div><p class="eyebrow">Version log</p><h1>Executive change log</h1><p class="muted">Concise record of product increments.</p></div></header>
+    <section class="panel version-log">
+      {% for entry in entries %}
+      <p>{{ entry }}</p>
+      {% endfor %}
+    </section>
+  </main>
+</body>
+</html>

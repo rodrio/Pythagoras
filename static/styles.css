@@ -37,4 +37,6 @@ th { color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing:
 .bars div { display: flex; justify-content: space-between; padding: 14px 16px; border-radius: 16px; background: #f8fafc; }
 .answer { white-space: pre-wrap; margin-top: 18px; padding: 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; line-height: 1.55; }
 .notice { margin: 18px 0; padding: 16px 18px; border-radius: 18px; background: #dcfce7; color: #166534; font-weight: 800; }
+.version-log p { margin: 0; padding: 16px 0; border-bottom: 1px solid #e8edf5; font-size: 20px; font-weight: 800; }
+.version-log p:last-child { border-bottom: 0; }
 @media (max-width: 980px) { .hero, .cards, .menu-cards, .three, .two { grid-template-columns: 1fr; display: grid; } .shell { padding: 18px; } }

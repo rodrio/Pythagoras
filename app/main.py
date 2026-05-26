@@ -97,6 +97,16 @@ async def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
 
+@app.get("/version-log", response_class=HTMLResponse)
+async def version_log(request: Request):
+    entries = [
+        "MVP v0.1 first deploy",
+        "MVP v0.2 added a menu to manage sources and GenAI",
+        "MVP v0.3 added executive version log accessible from the menu",
+    ]
+    return templates.TemplateResponse("version_log.html", {"request": request, "entries": entries})
+
+
 @app.get("/binance", response_class=HTMLResponse)
 async def binance_page(request: Request, currency: str | None = None):
     settings = get_settings()
