@@ -105,6 +105,7 @@ async def version_log(request: Request):
         "MVP v0.2 added a menu to manage sources and GenAI",
         "MVP v0.3 added executive version log accessible from the menu",
         "MVP v0.4 fixed local loading and template compatibility",
+        "MVP v0.5 refined environment visibility, GenAI model suggestions, and dashboard layout",
     ]
     return templates.TemplateResponse(request=request, name="version_log.html", context={"entries": entries})
 

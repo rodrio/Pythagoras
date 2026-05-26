@@ -77,29 +77,14 @@
       </article>
     </section>
 
-    <section class="grid two">
-      <article class="panel">
-        <h2>Import DEGIRO CSV</h2>
-        <form method="post" action="/upload/degiro" enctype="multipart/form-data" class="stack">
-          <select name="report_type">
-            <option value="portfolio">Portfolio overview</option>
-            <option value="account">Account statement</option>
-            <option value="transactions">Transaction statement</option>
-          </select>
-          <input type="file" name="file" accept=".csv" required>
-          <button>Upload CSV</button>
-        </form>
-      </article>
-
-      <article class="panel">
-        <h2>Secure config status</h2>
-        <ul class="status">
-          <li>Binance: {{ 'configured' if settings.binance_api_key and settings.binance_api_secret else 'not configured' }}</li>
-          <li>GenAI provider: {{ settings.genai_provider }}</li>
-          <li>GenAI key: {{ 'configured' if genai_configured else 'not configured' }}</li>
-          <li>Model: {{ settings.genai_model or 'provider default' }}</li>
-        </ul>
-      </article>
+    <section class="panel">
+      <h2>Secure config status</h2>
+      <ul class="status">
+        <li>Binance: {{ 'configured' if settings.binance_api_key and settings.binance_api_secret else 'not configured' }}</li>
+        <li>GenAI provider: {{ settings.genai_provider }}</li>
+        <li>GenAI key: {{ 'configured' if genai_configured else 'not configured' }}</li>
+        <li>Model: {{ settings.genai_model or 'provider default' }}</li>
+      </ul>
     </section>
 
     <section class="panel">

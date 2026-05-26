@@ -93,6 +93,16 @@ On Render:
 3. Add environment variables in Render dashboard.
 4. Deploy.
 
+## Version log
+
+- MVP v0.1 first deploy
+- MVP v0.2 added a menu to manage sources and GenAI
+- MVP v0.3 added executive version log accessible from the menu
+- MVP v0.4 fixed local loading and template compatibility
+- MVP v0.5 refined environment visibility, GenAI model suggestions, and dashboard layout
+
+Future changes should update the version log with a concise executive entry.
+
 ## Notes
 
 This app provides educational analysis only. GenAI output is not financial advice and should be reviewed critically.
