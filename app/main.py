@@ -87,14 +87,15 @@ async def dashboard(request: Request, currency: str | None = None):
     display_currency = currency or settings.default_display_currency
     data = await portfolio.dashboard(display_currency)
     return templates.TemplateResponse(
-        "dashboard.html",
-        {"request": request, "data": data, "settings": settings, "genai_configured": genai.configured},
+        request=request,
+        name="dashboard.html",
+        context={"data": data, "settings": settings, "genai_configured": genai.configured},
     )
 
 
 @app.get("/menu", response_class=HTMLResponse)
 async def menu(request: Request):
-    return templates.TemplateResponse("menu.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="menu.html")
 
 
 @app.get("/version-log", response_class=HTMLResponse)
@@ -103,8 +104,9 @@ async def version_log(request: Request):
         "MVP v0.1 first deploy",
         "MVP v0.2 added a menu to manage sources and GenAI",
         "MVP v0.3 added executive version log accessible from the menu",
+        "MVP v0.4 fixed local loading and template compatibility",
     ]
-    return templates.TemplateResponse("version_log.html", {"request": request, "entries": entries})
+    return templates.TemplateResponse(request=request, name="version_log.html", context={"entries": entries})
 
 
 @app.get("/binance", response_class=HTMLResponse)
@@ -114,7 +116,7 @@ async def binance_page(request: Request, currency: str | None = None):
     data = await portfolio.dashboard(currency or settings.default_display_currency)
     holdings = [item for item in data.holdings if item.provider == "Binance"]
     cash = [item for item in data.cash if item.provider == "Binance"]
-    return templates.TemplateResponse("binance.html", {"request": request, "settings": settings, "holdings": holdings, "cash": cash, "currency": data.display_currency})
+    return templates.TemplateResponse(request=request, name="binance.html", context={"settings": settings, "holdings": holdings, "cash": cash, "currency": data.display_currency})
 
 
 @app.post("/binance/update")
@@ -126,7 +128,7 @@ async def update_binance():
 @app.get("/degiro", response_class=HTMLResponse)
 async def degiro_page(request: Request):
     files = sorted(DATA_DIR.glob("degiro_*.csv"))
-    return templates.TemplateResponse("degiro.html", {"request": request, "files": files})
+    return templates.TemplateResponse(request=request, name="degiro.html", context={"files": files})
 
 
 @app.post("/upload/degiro")
@@ -139,12 +141,12 @@ async def upload_degiro(report_type: str = Form(...), file: UploadFile = File(..
 
 @app.get("/environment", response_class=HTMLResponse)
 async def environment_page(request: Request):
-    return templates.TemplateResponse("environment.html", {"request": request, "variables": masked_environment()})
+    return templates.TemplateResponse(request=request, name="environment.html", context={"variables": masked_environment()})
 
 
 @app.get("/config/genai", response_class=HTMLResponse)
 async def genai_config_page(request: Request, saved: str | None = None):
-    return templates.TemplateResponse("genai_config.html", {"request": request, "settings": get_settings(), "saved": saved == "1"})
+    return templates.TemplateResponse(request=request, name="genai_config.html", context={"settings": get_settings(), "saved": saved == "1"})
 
 
 @app.post("/config/genai")
@@ -161,8 +163,9 @@ async def chat(request: Request, message: str = Form(...), currency: str = Form(
     data = await portfolio.dashboard(currency)
     answer = await genai.chat(data, message)
     return templates.TemplateResponse(
-        "dashboard.html",
-        {"request": request, "data": data, "settings": get_settings(), "genai_configured": genai.configured, "chat_message": message, "chat_answer": answer},
+        request=request,
+        name="dashboard.html",
+        context={"data": data, "settings": get_settings(), "genai_configured": genai.configured, "chat_message": message, "chat_answer": answer},
     )
 
 
@@ -172,8 +175,9 @@ async def insights(request: Request, currency: str = Form("EUR")):
     data = await portfolio.dashboard(currency)
     answer = await genai.insights(data)
     return templates.TemplateResponse(
-        "dashboard.html",
-        {"request": request, "data": data, "settings": get_settings(), "genai_configured": genai.configured, "chat_message": "Generate portfolio insights", "chat_answer": answer},
+        request=request,
+        name="dashboard.html",
+        context={"data": data, "settings": get_settings(), "genai_configured": genai.configured, "chat_message": "Generate portfolio insights", "chat_answer": answer},
     )
 
 
