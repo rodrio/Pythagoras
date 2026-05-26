@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pythagoras Portfolio Manager</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Pythagoras</p>
+        <h1>Investment Portfolio Manager</h1>
+        <p class="muted">One dashboard for Shares, Funds, Cryptos, cash, providers, currencies, and GenAI insights.</p>
+      </div>
+      <form method="get" class="toolbar">
+        <label>Currency</label>
+        <select name="currency" onchange="this.form.submit()">
+          {% for option in ['NATIVE', 'EUR', 'USD'] %}
+          <option value="{{ option }}" {% if data.display_currency == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </header>
+
+    <section class="cards">
+      <article class="card"><span>Holdings</span><strong>{{ '%.2f'|format(data.total_holdings_value) }} {{ data.display_currency }}</strong></article>
+      <article class="card"><span>Cash</span><strong>{{ '%.2f'|format(data.total_cash_value) }} {{ data.display_currency }}</strong></article>
+      <article class="card"><span>Total</span><strong>{{ '%.2f'|format(data.total_holdings_value + data.total_cash_value) }} {{ data.display_currency }}</strong></article>
+    </section>
+
+    <section class="grid three">
+      {% for section in ['Shares', 'Funds', 'Cryptos'] %}
+      <article class="panel">
+        <h2>{{ section }}</h2>
+        <p class="big">{{ '%.2f'|format(data.by_section.get(section, 0)) }} {{ data.display_currency }}</p>
+        <table>
+          <thead><tr><th>Name</th><th>Provider</th><th>Qty</th><th>Value</th></tr></thead>
+          <tbody>
+          {% for holding in data.holdings if holding.section.value == section %}
+            <tr><td>{{ holding.name }}</td><td>{{ holding.provider }}</td><td>{{ '%.6g'|format(holding.quantity) }}</td><td>{{ '%.2f'|format(holding.display_market_value) }} {{ holding.display_currency }}</td></tr>
+          {% else %}
+            <tr><td colspan="4" class="muted">No {{ section|lower }} loaded yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </article>
+      {% endfor %}
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <h2>Cash by provider</h2>
+        <table>
+          <thead><tr><th>Provider</th><th>Currency</th><th>Amount</th></tr></thead>
+          <tbody>
+          {% for item in data.cash %}
+            <tr><td>{{ item.provider }}</td><td>{{ item.currency }}</td><td>{{ '%.2f'|format(item.display_amount) }} {{ item.display_currency }}</td></tr>
+          {% else %}
+            <tr><td colspan="3" class="muted">No cash balances loaded yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </article>
+
+      <article class="panel">
+        <h2>Totals by provider</h2>
+        <div class="bars">
+        {% for provider, value in data.by_provider.items() %}
+          <div><span>{{ provider }}</span><strong>{{ '%.2f'|format(value) }} {{ data.display_currency }}</strong></div>
+        {% else %}
+          <p class="muted">No provider data loaded yet.</p>
+        {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <h2>Import DEGIRO CSV</h2>
+        <form method="post" action="/upload/degiro" enctype="multipart/form-data" class="stack">
+          <select name="report_type">
+            <option value="portfolio">Portfolio overview</option>
+            <option value="account">Account statement</option>
+            <option value="transactions">Transaction statement</option>
+          </select>
+          <input type="file" name="file" accept=".csv" required>
+          <button>Upload CSV</button>
+        </form>
+      </article>
+
+      <article class="panel">
+        <h2>Secure config status</h2>
+        <ul class="status">
+          <li>Binance: {{ 'configured' if settings.binance_api_key and settings.binance_api_secret else 'not configured' }}</li>
+          <li>GenAI provider: {{ settings.genai_provider }}</li>
+          <li>GenAI key: {{ 'configured' if genai_configured else 'not configured' }}</li>
+          <li>Model: {{ settings.genai_model or 'provider default' }}</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Portfolio AI chat</h2>
+      <form method="post" action="/chat" class="chat-form">
+        <input type="hidden" name="currency" value="{{ data.display_currency }}">
+        <textarea name="message" rows="4" placeholder="Ask about diversification, risk, cash allocation, provider exposure..." required>{{ chat_message or '' }}</textarea>
+        <button>Ask model</button>
+      </form>
+      <form method="post" action="/insights" class="inline-form">
+        <input type="hidden" name="currency" value="{{ data.display_currency }}">
+        <button type="submit">Generate recommendations and insights</button>
+      </form>
+      {% if chat_answer %}
+      <div class="answer">{{ chat_answer }}</div>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
