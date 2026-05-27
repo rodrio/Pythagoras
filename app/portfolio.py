@@ -1,17 +1,29 @@
 from app.currency import CurrencyConverter
 from app.models import ConvertedCash, ConvertedHolding, DashboardData, PortfolioSnapshot
 from app.providers import BinanceProvider, DegiroCsvProvider
+from app.database import Database
 
 
 class PortfolioService:
-    def __init__(self, binance: BinanceProvider, degiro: DegiroCsvProvider, converter: CurrencyConverter):
+    def __init__(self, binance: BinanceProvider, degiro: DegiroCsvProvider, converter: CurrencyConverter, database: Database | None = None):
         self.binance = binance
         self.degiro = degiro
         self.converter = converter
+        self.database = database
 
     async def snapshot(self) -> PortfolioSnapshot:
+        if self.database:
+            stored = self.database.latest_snapshot()
+            if stored:
+                return stored
+        return await self.refresh_snapshot()
+
+    async def refresh_snapshot(self) -> PortfolioSnapshot:
         binance = await self.binance.fetch()
         degiro = self.degiro.fetch()
+        if self.database:
+            self.database.save_snapshot("Binance", "api", binance)
+            self.database.save_snapshot("DEGIRO", "csv", degiro)
         return PortfolioSnapshot(holdings=[*binance.holdings, *degiro.holdings], cash=[*binance.cash, *degiro.cash])
 
     async def dashboard(self, display_currency: str) -> DashboardData:

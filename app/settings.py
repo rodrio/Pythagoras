@@ -17,6 +17,8 @@ _CUSTOM_ENV_FILE: str | None = None
 class Settings(BaseSettings):
     app_env: str = "local"
     app_secret_key: str = Field(default="change-me", repr=False)
+    database_url: str | None = Field(default=None, repr=False)
+    supabase_db_url: str | None = Field(default=None, repr=False)
     default_display_currency: Literal["NATIVE", "EUR", "USD"] = "EUR"
 
     investor_profile: str = "Long-term investor focused on diversified growth."

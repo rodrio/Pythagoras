@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any
 
 import anthropic
 import google.generativeai as genai_google
@@ -14,8 +15,9 @@ CONVERSATION_HISTORY: list[dict[str, str]] = []
 
 
 class GenAIService:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, database: Any | None = None):
         self.settings = settings
+        self.database = database
 
     @property
     def configured(self) -> bool:
@@ -29,6 +31,25 @@ class GenAIService:
 
     async def insights(self, dashboard: DashboardData) -> str:
         return await self.chat(dashboard, "Generate recommendations and insights.", use_insights_prompt=True)
+
+    async def portfolio_insight(self, dashboard: DashboardData) -> str:
+        prompt = self.settings.portfolio_insight_prompt.format(portfolio=self._portfolio_block(dashboard), investor_profile=self._investor_profile_block())
+        return await self.chat(dashboard, prompt)
+
+    async def asset_insight(self, dashboard: DashboardData, symbol: str) -> str:
+        asset = self._asset_block(dashboard, symbol)
+        prompt = self.settings.asset_insight_prompt.format(asset=asset, portfolio=self._portfolio_block(dashboard), investor_profile=self._investor_profile_block())
+        return await self.chat(dashboard, prompt)
+
+    async def asset_macro(self, dashboard: DashboardData, symbol: str) -> str:
+        asset = self._asset_block(dashboard, symbol)
+        prompt = self.settings.asset_macro_prompt.format(asset=asset, portfolio=self._portfolio_block(dashboard), investor_profile=self._investor_profile_block())
+        return await self.chat(dashboard, prompt)
+
+    async def asset_compare(self, dashboard: DashboardData, symbol: str) -> str:
+        asset = self._asset_block(dashboard, symbol)
+        prompt = self.settings.asset_compare_prompt.format(asset=asset, portfolio=self._portfolio_block(dashboard), investor_profile=self._investor_profile_block())
+        return await self.chat(dashboard, prompt)
 
     async def chat(self, dashboard: DashboardData, message: str, use_insights_prompt: bool = False) -> str:
         if not self.configured:
@@ -44,6 +65,9 @@ class GenAIService:
             return "No GenAI provider selected."
         CONVERSATION_HISTORY.append({"role": "user", "content": message})
         CONVERSATION_HISTORY.append({"role": "assistant", "content": answer})
+        if self.database:
+            self.database.add_conversation("user", message)
+            self.database.add_conversation("assistant", answer)
         return answer
 
     def _prompt(self, dashboard: DashboardData, user_message: str, use_insights_prompt: bool = False) -> str:
@@ -69,6 +93,9 @@ Current portfolio:
 
 Conversation so far:
 {history}
+
+Extra context:
+{self.settings.chat_extra_context}
 
 User request: {user_message}
 """.strip()
@@ -110,10 +137,20 @@ User request: {user_message}
         return "\n".join(lines)
 
     def _conversation_block(self) -> str:
+        if self.database:
+            rows = self.database.conversation()
+            if rows:
+                return "\n".join(f"{item['role']}: {item['content']}" for item in rows)
         if not CONVERSATION_HISTORY:
             return "No previous conversation in this app session."
         recent = CONVERSATION_HISTORY[-12:]
         return "\n".join(f"{item['role']}: {item['content']}" for item in recent)
+
+    def _asset_block(self, dashboard: DashboardData, symbol: str) -> str:
+        for item in dashboard.holdings:
+            if item.symbol == symbol:
+                return str(item.model_dump())
+        return f"Asset symbol not found in current portfolio: {symbol}"
 
     def _google(self, prompt: str) -> str:
         genai_google.configure(api_key=self.settings.google_api_key)

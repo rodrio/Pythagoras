@@ -45,4 +45,11 @@ th { color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing:
 .notice { margin: 18px 0; padding: 16px 18px; border-radius: 18px; background: #dcfce7; color: #166534; font-weight: 800; }
 .version-log p { margin: 0; padding: 16px 0; border-bottom: 1px solid #e8edf5; font-size: 20px; font-weight: 800; }
 .version-log p:last-child { border-bottom: 0; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; min-width: 180px; }
+.actions a, .button-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; background: #2563eb; color: white; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 800; }
+.actions a:hover, .button-link:hover { background: #1d4ed8; }
+.table-scroll { overflow-x: auto; width: 100%; }
+.table-scroll table { min-width: 720px; }
+.modal-shell { min-height: 100vh; display: grid; place-items: center; }
+.modal-card { width: min(960px, 100%); }
 @media (max-width: 980px) { .hero, .cards, .menu-cards, .three, .two { grid-template-columns: 1fr; display: grid; } .shell { padding: 18px; } }

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Configuration - Pythagoras</title><link rel="stylesheet" href="/static/styles.css"></head>
+<body>
+  <div class="topbar"><button class="hamburger" onclick="document.getElementById('menu-overlay').classList.toggle('open')">☰</button><span class="brand">Pythagoras</span></div>
+  <div id="menu-overlay" class="menu-overlay" onclick="if(event.target===this)this.classList.remove('open')"><div class="menu-panel"><a href="/">Dashboard</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/config">Configuration</a><a href="/chat">GenAI chat</a><a href="/version-log">Version log</a></div></div>
+  <main class="shell">
+    <header class="hero"><div><p class="eyebrow">Configuration</p><h1>Runtime settings</h1><p class="muted">Application settings stored in PostgreSQL/Supabase. Database connection variables still come from environment variables.</p></div></header>
+    {% if not db_configured %}<section class="notice" style="background:#fee2e2;color:#991b1b;">Database is not configured. Set DATABASE_URL or SUPABASE_DB_URL to enable persistent config.</section>{% endif %}
+    {% if saved %}<section class="notice">Configuration saved.</section>{% endif %}
+    <form method="post" action="/config" class="stack">
+      {% for topic in ['general', 'investor_profile', 'api_keys', 'genai', 'prompts'] %}
+      <section class="panel">
+        <h2>{{ topic.replace('_', ' ')|title }}</h2>
+        <div class="grid two">
+          {% for row in rows if row.topic == topic %}
+          <label class="stack"><span>{{ row.key }}</span>{% if 'prompt' in row.key or row.key == 'chat_extra_context' %}<textarea name="{{ row.key }}" rows="5">{{ row.value }}</textarea>{% else %}<input name="{{ row.key }}" value="{{ row.value }}" {% if row.is_secret %}type="password" autocomplete="off"{% endif %}>{% endif %}</label>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+      <button>Save all configuration</button>
+    </form>
+  </main>
+</body>
+</html>

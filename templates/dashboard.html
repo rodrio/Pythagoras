@@ -16,8 +16,8 @@
       <a href="/">Dashboard</a>
       <a href="/binance">Binance</a>
       <a href="/degiro">DEGIRO</a>
-      <a href="/environment">Environment</a>
-      <a href="/config/genai">GenAI config</a>
+      <a href="/config">Configuration</a>
+      <a href="/chat">GenAI chat</a>
       <a href="/version-log">Version log</a>
     </div>
   </div>
@@ -44,21 +44,39 @@
       <article class="card"><span>Total</span><strong>{{ '%.2f'|format(data.total_holdings_value + data.total_cash_value) }} {{ data.display_currency }}</strong></article>
     </section>
 
+    <section class="panel">
+      <h2>Portfolio evolution</h2>
+      <div class="bars">
+        {% for point in evolution %}
+        <div><span>{{ point.date }}</span><strong>{{ point.total_value }} {{ data.display_currency }}</strong></div>
+        {% else %}
+        <p class="muted">No database history yet. Update Binance or upload DEGIRO data to start tracking evolution.</p>
+        {% endfor %}
+      </div>
+      <p style="margin-top:12px;"><a class="button-link" href="/insights/portfolio?currency={{ data.display_currency }}">Portfolio insights</a></p>
+    </section>
+
     <section class="grid three">
       {% for section in ['Shares', 'Funds', 'Cryptos'] %}
       <article class="panel">
         <h2>{{ section }}</h2>
         <p class="big">{{ '%.2f'|format(data.by_section.get(section, 0)) }} {{ data.display_currency }}</p>
-        <table>
-          <thead><tr><th>Name</th><th>Provider</th><th>Qty</th><th>Value</th></tr></thead>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Name</th><th>Provider</th><th>Qty</th><th>Value</th><th>GenAI</th></tr></thead>
           <tbody>
           {% for holding in data.holdings if holding.section.value == section %}
-            <tr><td>{{ holding.name }}</td><td>{{ holding.provider }}</td><td>{{ '%.6g'|format(holding.quantity) }}</td><td>{{ '%.2f'|format(holding.display_market_value) }} {{ holding.display_currency }}</td></tr>
+            <tr>
+              <td>{{ holding.name }}<br><span class="muted">{{ holding.symbol }}</span></td>
+              <td>{{ holding.provider }}</td>
+              <td>{{ '%.6g'|format(holding.quantity) }}</td>
+              <td>{{ '%.2f'|format(holding.display_market_value) }} {{ holding.display_currency }}</td>
+              <td class="actions"><a href="/insights/asset/{{ holding.symbol }}?currency={{ data.display_currency }}">Insight</a><a href="/macro/asset/{{ holding.symbol }}?currency={{ data.display_currency }}">Macro</a><a href="/compare/asset/{{ holding.symbol }}?currency={{ data.display_currency }}">Compare</a></td>
+            </tr>
           {% else %}
-            <tr><td colspan="4" class="muted">No {{ section|lower }} loaded yet.</td></tr>
+            <tr><td colspan="5" class="muted">No {{ section|lower }} loaded yet.</td></tr>
           {% endfor %}
           </tbody>
-        </table>
+        </table></div>
       </article>
       {% endfor %}
     </section>
@@ -100,21 +118,6 @@
       </ul>
     </section>
 
-    <section class="panel">
-      <h2>Portfolio AI chat</h2>
-      <form method="post" action="/chat" class="chat-form">
-        <input type="hidden" name="currency" value="{{ data.display_currency }}">
-        <textarea name="message" rows="4" placeholder="Ask about diversification, risk, cash allocation, provider exposure..." required>{{ chat_message or '' }}</textarea>
-        <button>Ask model</button>
-      </form>
-      <form method="post" action="/insights" class="inline-form">
-        <input type="hidden" name="currency" value="{{ data.display_currency }}">
-        <button type="submit">Generate recommendations and insights</button>
-      </form>
-      {% if chat_answer %}
-      <div class="answer">{{ chat_answer }}</div>
-      {% endif %}
-    </section>
   </main>
 </body>
 </html>

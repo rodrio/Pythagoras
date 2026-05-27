@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GenAI Chat - Pythagoras</title><link rel="stylesheet" href="/static/styles.css"></head>
+<body>
+  <div class="topbar"><button class="hamburger" onclick="document.getElementById('menu-overlay').classList.toggle('open')">☰</button><span class="brand">Pythagoras</span></div>
+  <div id="menu-overlay" class="menu-overlay" onclick="if(event.target===this)this.classList.remove('open')"><div class="menu-panel"><a href="/">Dashboard</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/config">Configuration</a><a href="/chat">GenAI chat</a><a href="/version-log">Version log</a></div></div>
+  <main class="shell">
+    <header class="hero"><div><p class="eyebrow">GenAI</p><h1>Portfolio-aware chat</h1><p class="muted">The agent receives the current portfolio, investor profile, and configurable extra context.</p></div></header>
+    <section class="panel">
+      <form method="post" action="/chat" class="chat-form"><input type="hidden" name="currency" value="{{ data.display_currency }}"><textarea name="message" rows="5" placeholder="Ask a follow-up question about the portfolio..." required>{{ chat_message or '' }}</textarea><button>Ask model</button></form>
+      {% if chat_answer %}<div class="answer">{{ chat_answer }}</div>{% endif %}
+    </section>
+    <section class="panel"><h2>Conversation context</h2><div class="answer">{{ conversation }}</div></section>
+  </main>
+</body>
+</html>
