@@ -6,6 +6,7 @@ from psycopg.rows import dict_row
 
 from app.models import CashBalance, Holding, PortfolioSnapshot
 from app.settings import Settings
+from app.errors import AppError
 
 CONFIG_DEFAULTS: dict[str, dict[str, str | bool]] = {
     "default_display_currency": {"value": "EUR", "topic": "general", "is_secret": False},
@@ -52,32 +53,40 @@ class Database:
     def connect(self):
         if not self.url:
             raise RuntimeError("DATABASE_URL or SUPABASE_DB_URL is required for database features.")
-        return psycopg.connect(self.url, row_factory=dict_row)
+        try:
+            return psycopg.connect(self.url, row_factory=dict_row)
+        except Exception as exc:
+            raise AppError("Database", "opening PostgreSQL connection", f"{type(exc).__name__}: {exc}", exc) from exc
 
     def ensure_seed_data(self) -> None:
         if not self.configured:
             return
-        with self.connect() as conn:
-            with conn.cursor() as cur:
-                for key, meta in CONFIG_DEFAULTS.items():
-                    cur.execute(
-                        """
-                        insert into app_config (key, value, topic, is_secret)
-                        values (%s, %s, %s, %s)
-                        on conflict (key) do nothing
-                        """,
-                        (key, meta["value"], meta["topic"], meta["is_secret"]),
-                    )
-                for version, title in VERSION_ENTRIES:
-                    cur.execute(
-                        """
-                        insert into version_log (version, title)
-                        select %s, %s
-                        where not exists (select 1 from version_log where version = %s and title = %s)
-                        """,
-                        (version, title, version, title),
-                    )
-            conn.commit()
+        try:
+            with self.connect() as conn:
+                with conn.cursor() as cur:
+                    for key, meta in CONFIG_DEFAULTS.items():
+                        cur.execute(
+                            """
+                            insert into app_config (key, value, topic, is_secret)
+                            values (%s, %s, %s, %s)
+                            on conflict (key) do nothing
+                            """,
+                            (key, meta["value"], meta["topic"], meta["is_secret"]),
+                        )
+                    for version, title in VERSION_ENTRIES:
+                        cur.execute(
+                            """
+                            insert into version_log (version, title)
+                            select %s, %s
+                            where not exists (select 1 from version_log where version = %s and title = %s)
+                            """,
+                            (version, title, version, title),
+                        )
+                conn.commit()
+        except AppError:
+            raise
+        except Exception as exc:
+            raise AppError("Database", "seeding default configuration/version log", f"{type(exc).__name__}: {exc}", exc) from exc
 
     def config(self) -> dict[str, str]:
         values = {key: str(meta["value"]) for key, meta in CONFIG_DEFAULTS.items()}

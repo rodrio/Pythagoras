@@ -6,6 +6,7 @@ import anthropic
 import google.generativeai as genai_google
 from openai import OpenAI
 
+from app.errors import AppError
 from app.models import DashboardData
 from app.settings import Settings
 
@@ -54,21 +55,26 @@ class GenAIService:
     async def chat(self, dashboard: DashboardData, message: str, use_insights_prompt: bool = False) -> str:
         if not self.configured:
             return "GenAI is disabled or missing an API key. Configure GENAI_PROVIDER and the matching API key in your environment."
-        prompt = self._prompt(dashboard, message, use_insights_prompt)
-        if self.settings.genai_provider == "google":
-            answer = self._google(prompt)
-        elif self.settings.genai_provider == "openai":
-            answer = self._openai(prompt)
-        elif self.settings.genai_provider == "anthropic":
-            answer = self._anthropic(prompt)
-        else:
-            return "No GenAI provider selected."
-        CONVERSATION_HISTORY.append({"role": "user", "content": message})
-        CONVERSATION_HISTORY.append({"role": "assistant", "content": answer})
-        if self.database:
-            self.database.add_conversation("user", message)
-            self.database.add_conversation("assistant", answer)
-        return answer
+        try:
+            prompt = self._prompt(dashboard, message, use_insights_prompt)
+            if self.settings.genai_provider == "google":
+                answer = self._google(prompt)
+            elif self.settings.genai_provider == "openai":
+                answer = self._openai(prompt)
+            elif self.settings.genai_provider == "anthropic":
+                answer = self._anthropic(prompt)
+            else:
+                return "No GenAI provider selected."
+            CONVERSATION_HISTORY.append({"role": "user", "content": message})
+            CONVERSATION_HISTORY.append({"role": "assistant", "content": answer})
+            if self.database:
+                self.database.add_conversation("user", message)
+                self.database.add_conversation("assistant", answer)
+            return answer
+        except AppError:
+            raise
+        except Exception as exc:
+            raise AppError("GenAI service", f"generating response with provider {self.settings.genai_provider}", f"{type(exc).__name__}: {exc}", exc) from exc
 
     def _prompt(self, dashboard: DashboardData, user_message: str, use_insights_prompt: bool = False) -> str:
         investor_profile = self._investor_profile_block()
@@ -138,9 +144,14 @@ User request: {user_message}
 
     def _conversation_block(self) -> str:
         if self.database:
-            rows = self.database.conversation()
-            if rows:
-                return "\n".join(f"{item['role']}: {item['content']}" for item in rows)
+            try:
+                rows = self.database.conversation()
+                if rows:
+                    return "\n".join(f"{item['role']}: {item['content']}" for item in rows)
+            except AppError:
+                raise
+            except Exception as exc:
+                raise AppError("GenAI service", "loading persistent conversation context", f"{type(exc).__name__}: {exc}", exc) from exc
         if not CONVERSATION_HISTORY:
             return "No previous conversation in this app session."
         recent = CONVERSATION_HISTORY[-12:]

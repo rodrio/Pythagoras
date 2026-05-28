@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 
 import httpx
 
+from app.errors import AppError
 from app.models import AssetSection, CashBalance, Holding, PortfolioSnapshot
 from app.settings import Settings
 
@@ -22,41 +23,49 @@ class BinanceProvider:
     async def fetch(self) -> PortfolioSnapshot:
         if not self.configured:
             return PortfolioSnapshot()
-        balances = await self._signed_get("/api/v3/account")
-        tickers = await self._public_get("/api/v3/ticker/price")
-        price_by_symbol = {item["symbol"]: float(item["price"]) for item in tickers if "symbol" in item and "price" in item}
-        holdings: list[Holding] = []
-        cash: list[CashBalance] = []
-        for balance in balances.get("balances", []):
-            asset = balance.get("asset", "")
-            free = float(balance.get("free", 0) or 0)
-            locked = float(balance.get("locked", 0) or 0)
-            quantity = free + locked
-            if quantity <= 0:
-                continue
-            if asset in {"EUR", "USD", "USDT", "USDC"}:
-                cash.append(CashBalance(provider="Binance", currency="USD" if asset in {"USDT", "USDC"} else asset, amount=quantity))
-                continue
-            quote_symbol = f"{asset}USDT"
-            price = price_by_symbol.get(quote_symbol, 0)
-            holdings.append(
-                Holding(
-                    provider="Binance",
-                    section=AssetSection.cryptos,
-                    symbol=asset,
-                    name=asset,
-                    quantity=quantity,
-                    currency="USD",
-                    market_value=round(quantity * price, 2),
+        try:
+            balances = await self._signed_get("/api/v3/account")
+            tickers = await self._public_get("/api/v3/ticker/price")
+            price_by_symbol = {item["symbol"]: float(item["price"]) for item in tickers if "symbol" in item and "price" in item}
+            holdings: list[Holding] = []
+            cash: list[CashBalance] = []
+            for balance in balances.get("balances", []):
+                asset = balance.get("asset", "")
+                free = float(balance.get("free", 0) or 0)
+                locked = float(balance.get("locked", 0) or 0)
+                quantity = free + locked
+                if quantity <= 0:
+                    continue
+                if asset in {"EUR", "USD", "USDT", "USDC"}:
+                    cash.append(CashBalance(provider="Binance", currency="USD" if asset in {"USDT", "USDC"} else asset, amount=quantity))
+                    continue
+                quote_symbol = f"{asset}USDT"
+                price = price_by_symbol.get(quote_symbol, 0)
+                holdings.append(
+                    Holding(
+                        provider="Binance",
+                        section=AssetSection.cryptos,
+                        symbol=asset,
+                        name=asset,
+                        quantity=quantity,
+                        currency="USD",
+                        market_value=round(quantity * price, 2),
+                    )
                 )
-            )
-        return PortfolioSnapshot(holdings=holdings, cash=cash)
+            return PortfolioSnapshot(holdings=holdings, cash=cash)
+        except AppError:
+            raise
+        except Exception as exc:
+            raise AppError("Binance provider", "fetching and parsing account balances", f"{type(exc).__name__}: {exc}", exc) from exc
 
     async def _public_get(self, path: str) -> list[dict]:
         async with httpx.AsyncClient(base_url=self.settings.binance_base_url, timeout=12) as client:
-            response = await client.get(path)
-            response.raise_for_status()
-            return response.json()
+            try:
+                response = await client.get(path)
+                response.raise_for_status()
+                return response.json()
+            except Exception as exc:
+                raise AppError("Binance provider", f"calling public endpoint {path}", f"{type(exc).__name__}: {exc}", exc) from exc
 
     async def _signed_get(self, path: str) -> dict:
         params = {"timestamp": int(time.time() * 1000)}
@@ -64,9 +73,12 @@ class BinanceProvider:
         signature = hmac.new(self.settings.binance_api_secret.encode(), query.encode(), hashlib.sha256).hexdigest()
         headers = {"X-MBX-APIKEY": self.settings.binance_api_key}
         async with httpx.AsyncClient(base_url=self.settings.binance_base_url, timeout=12) as client:
-            response = await client.get(f"{path}?{query}&signature={signature}", headers=headers)
-            response.raise_for_status()
-            return response.json()
+            try:
+                response = await client.get(f"{path}?{query}&signature={signature}", headers=headers)
+                response.raise_for_status()
+                return response.json()
+            except Exception as exc:
+                raise AppError("Binance provider", f"calling signed endpoint {path}", f"{type(exc).__name__}: {exc}", exc) from exc
 
 
 class DegiroCsvProvider:
@@ -77,17 +89,25 @@ class DegiroCsvProvider:
     def save_upload(self, report_type: str, filename: str, content: bytes) -> Path:
         safe_name = Path(filename).name
         path = self.data_dir / f"degiro_{report_type}_{safe_name}"
-        path.write_bytes(content)
-        return path
+        try:
+            path.write_bytes(content)
+            return path
+        except Exception as exc:
+            raise AppError("DEGIRO provider", f"saving uploaded CSV {safe_name}", f"{type(exc).__name__}: {exc}", exc) from exc
 
     def fetch(self) -> PortfolioSnapshot:
-        holdings: list[Holding] = []
-        cash: list[CashBalance] = []
-        for path in self.data_dir.glob("degiro_portfolio_*.csv"):
-            holdings.extend(self._parse_portfolio(path))
-        for path in self.data_dir.glob("degiro_account_*.csv"):
-            cash.extend(self._parse_account(path))
-        return PortfolioSnapshot(holdings=holdings, cash=cash)
+        try:
+            holdings: list[Holding] = []
+            cash: list[CashBalance] = []
+            for path in self.data_dir.glob("degiro_portfolio_*.csv"):
+                holdings.extend(self._parse_portfolio(path))
+            for path in self.data_dir.glob("degiro_account_*.csv"):
+                cash.extend(self._parse_account(path))
+            return PortfolioSnapshot(holdings=holdings, cash=cash)
+        except AppError:
+            raise
+        except Exception as exc:
+            raise AppError("DEGIRO provider", "fetching and parsing uploaded CSV files", f"{type(exc).__name__}: {exc}", exc) from exc
 
     def _parse_portfolio(self, path: Path) -> list[Holding]:
         rows = self._read_rows(path)
@@ -114,10 +134,13 @@ class DegiroCsvProvider:
         return [CashBalance(provider="DEGIRO", currency=currency, amount=round(amount, 2)) for currency, amount in balances.items() if amount]
 
     def _read_rows(self, path: Path) -> list[dict[str, str]]:
-        text = path.read_text(encoding="utf-8-sig", errors="ignore")
-        sample = text[:2048]
-        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t") if sample.strip() else csv.excel
-        return list(csv.DictReader(text.splitlines(), dialect=dialect))
+        try:
+            text = path.read_text(encoding="utf-8-sig", errors="ignore")
+            sample = text[:2048]
+            dialect = csv.Sniffer().sniff(sample, delimiters=",;\t") if sample.strip() else csv.excel
+            return list(csv.DictReader(text.splitlines(), dialect=dialect))
+        except Exception as exc:
+            raise AppError("DEGIRO provider", f"reading CSV file {path.name}", f"{type(exc).__name__}: {exc}", exc) from exc
 
     def _first(self, row: dict[str, str], *names: str, default: str = "") -> str:
         normalized = {key.strip().lower(): value for key, value in row.items() if key}

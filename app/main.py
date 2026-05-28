@@ -1,17 +1,23 @@
+import logging
+import traceback
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.currency import CurrencyConverter
 from app.database import Database
+from app.errors import AppError, describe_exception
 from app.genai import GenAIService
 from app.portfolio import PortfolioService
 from app.providers import BinanceProvider, DegiroCsvProvider
 from app.runtime_config import RuntimeConfig
 from app.settings import get_settings
+
+logger = logging.getLogger("pythagoras")
+logging.basicConfig(level=logging.INFO)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -19,6 +25,23 @@ DATA_DIR = BASE_DIR / "data"
 app = FastAPI(title="Pythagoras Portfolio Manager")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
+
+
+@app.exception_handler(Exception)
+async def app_exception_handler(request: Request, exc: Exception):
+    message = describe_exception(exc)
+    logger.error("Request to %s failed: %s", request.url.path, message)
+    logger.error("Traceback:\n%s", "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+    try:
+        return templates.TemplateResponse(
+            request=request,
+            name="error.html",
+            context={"error_message": message},
+            status_code=500,
+        )
+    except Exception as render_exc:
+        logger.error("Error template failed to render: %s", render_exc)
+        return PlainTextResponse(f"Pythagoras error: {message}", status_code=500)
 
 
 def database() -> Database:
@@ -47,10 +70,17 @@ async def dashboard(request: Request, currency: str | None = None):
     portfolio, _, genai, db, settings = services()
     display_currency = currency or settings.default_display_currency
     data = await portfolio.dashboard(display_currency)
+    try:
+        evolution = db.portfolio_evolution()
+    except AppError as exc:
+        evolution = []
+        dashboard_error = exc.user_message
+    else:
+        dashboard_error = None
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
-        context={"data": data, "settings": settings, "genai_configured": genai.configured, "evolution": db.portfolio_evolution()},
+        context={"data": data, "settings": settings, "genai_configured": genai.configured, "evolution": evolution, "error_message": dashboard_error},
     )
 
 

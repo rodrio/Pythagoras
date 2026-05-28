@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Error - Pythagoras</title><link rel="stylesheet" href="/static/styles.css"></head>
+<body>
+  <div class="topbar"><button class="hamburger" onclick="document.getElementById('menu-overlay').classList.toggle('open')">&#9776;</button><span class="brand">Pythagoras</span></div>
+  <div id="menu-overlay" class="menu-overlay" onclick="if(event.target===this)this.classList.remove('open')"><div class="menu-panel"><a href="/">Dashboard</a><a href="/binance">Binance</a><a href="/degiro">DEGIRO</a><a href="/config">Configuration</a><a href="/chat">GenAI chat</a><a href="/version-log">Version log</a></div></div>
+  <main class="shell">
+    <header class="hero"><div><p class="eyebrow">Error</p><h1>Something went wrong</h1><p class="muted">The action could not be completed. The cause is shown below.</p></div></header>
+    <section class="panel error-box">
+      <h2>Error detail</h2>
+      <pre style="white-space:pre-wrap;word-break:break-word;">{{ error_message }}</pre>
+      <p class="muted" style="margin-top:16px;">Use the menu to navigate elsewhere. Check the server logs for the full traceback.</p>
+    </section>
+  </main>
+</body>
+</html>

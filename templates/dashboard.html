@@ -38,6 +38,8 @@
       </form>
     </header>
 
+    {% if error_message %}<section class="panel error-box"><strong>Notice:</strong> {{ error_message }}</section>{% endif %}
+
     <section class="cards">
       <article class="card"><span>Holdings</span><strong>{{ '%.2f'|format(data.total_holdings_value) }} {{ data.display_currency }}</strong></article>
       <article class="card"><span>Cash</span><strong>{{ '%.2f'|format(data.total_cash_value) }} {{ data.display_currency }}</strong></article>
