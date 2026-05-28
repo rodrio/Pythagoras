@@ -1,12 +1,13 @@
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any
 
-import psycopg
-from psycopg.rows import dict_row
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
+from app.errors import AppError
 from app.models import CashBalance, Holding, PortfolioSnapshot
 from app.settings import Settings
-from app.errors import AppError
 
 CONFIG_DEFAULTS: dict[str, dict[str, str | bool]] = {
     "default_display_currency": {"value": "EUR", "topic": "general", "is_secret": False},
@@ -50,39 +51,48 @@ class Database:
     def configured(self) -> bool:
         return bool(self.url)
 
-    def connect(self):
+    def _connect(self):
         if not self.url:
             raise RuntimeError("DATABASE_URL or SUPABASE_DB_URL is required for database features.")
         try:
-            return psycopg.connect(self.url, row_factory=dict_row)
+            return psycopg2.connect(self.url)
         except Exception as exc:
             raise AppError("Database", "opening PostgreSQL connection", f"{type(exc).__name__}: {exc}", exc) from exc
+
+    @contextmanager
+    def _connection(self):
+        conn = self._connect()
+        try:
+            yield conn
+        finally:
+            conn.close()
 
     def ensure_seed_data(self) -> None:
         if not self.configured:
             return
         try:
-            with self.connect() as conn:
-                with conn.cursor() as cur:
-                    for key, meta in CONFIG_DEFAULTS.items():
-                        cur.execute(
-                            """
-                            insert into app_config (key, value, topic, is_secret)
-                            values (%s, %s, %s, %s)
-                            on conflict (key) do nothing
-                            """,
-                            (key, meta["value"], meta["topic"], meta["is_secret"]),
-                        )
-                    for version, title in VERSION_ENTRIES:
-                        cur.execute(
-                            """
-                            insert into version_log (version, title)
-                            select %s, %s
-                            where not exists (select 1 from version_log where version = %s and title = %s)
-                            """,
-                            (version, title, version, title),
-                        )
+            with self._connection() as conn:
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                for key, meta in CONFIG_DEFAULTS.items():
+                    cur.execute(
+                        """
+                        insert into app_config (key, value, topic, is_secret)
+                        values (%s, %s, %s, %s)
+                        on conflict (key) do nothing
+                        """,
+                        (key, meta["value"], meta["topic"], meta["is_secret"]),
+                    )
+                for version, title in VERSION_ENTRIES:
+                    cur.execute(
+                        """
+                        insert into version_log (version, title)
+                        select %s, %s
+                        where not exists (select 1 from version_log where version = %s and title = %s)
+                        """,
+                        (version, title, version, title),
+                    )
                 conn.commit()
+                cur.close()
         except AppError:
             raise
         except Exception as exc:
@@ -92,68 +102,78 @@ class Database:
         values = {key: str(meta["value"]) for key, meta in CONFIG_DEFAULTS.items()}
         if not self.configured:
             return values
-        with self.connect() as conn:
-            rows = conn.execute("select key, value from app_config").fetchall()
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("select key, value from app_config")
+            rows = cur.fetchall()
+            cur.close()
         values.update({row["key"]: row["value"] for row in rows})
         return values
 
     def config_rows(self) -> list[dict[str, Any]]:
         if not self.configured:
             return [{"key": key, **meta, "updated_at": None} for key, meta in CONFIG_DEFAULTS.items()]
-        with self.connect() as conn:
-            return conn.execute("select key, value, topic, is_secret, updated_at from app_config order by topic, key").fetchall()
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("select key, value, topic, is_secret, updated_at from app_config order by topic, key")
+            rows = cur.fetchall()
+            cur.close()
+            return rows
 
     def update_config(self, updates: dict[str, str]) -> None:
         if not self.configured:
             return
-        with self.connect() as conn:
-            with conn.cursor() as cur:
-                for key, value in updates.items():
-                    meta = CONFIG_DEFAULTS.get(key, {"topic": "general", "is_secret": False})
-                    cur.execute(
-                        """
-                        insert into app_config (key, value, topic, is_secret, updated_at)
-                        values (%s, %s, %s, %s, now())
-                        on conflict (key) do update set value = excluded.value, updated_at = now()
-                        """,
-                        (key, value, meta["topic"], meta["is_secret"]),
-                    )
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            for key, value in updates.items():
+                meta = CONFIG_DEFAULTS.get(key, {"topic": "general", "is_secret": False})
+                cur.execute(
+                    """
+                    insert into app_config (key, value, topic, is_secret, updated_at)
+                    values (%s, %s, %s, %s, now())
+                    on conflict (key) do update set value = excluded.value, updated_at = now()
+                    """,
+                    (key, value, meta["topic"], meta["is_secret"]),
+                )
             conn.commit()
+            cur.close()
 
     def save_snapshot(self, provider: str, source: str, snapshot: PortfolioSnapshot) -> None:
         if not self.configured:
             return
         captured_at = datetime.now(timezone.utc)
-        with self.connect() as conn:
-            with conn.cursor() as cur:
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(
+                "insert into portfolio_snapshots (provider, source, captured_at) values (%s, %s, %s) returning id",
+                (provider, source, captured_at),
+            )
+            snapshot_id = cur.fetchone()["id"]
+            for item in snapshot.holdings:
                 cur.execute(
-                    "insert into portfolio_snapshots (provider, source, captured_at) values (%s, %s, %s) returning id",
-                    (provider, source, captured_at),
+                    """
+                    insert into portfolio_holdings (snapshot_id, provider, section, symbol, name, quantity, currency, market_value, cost_basis, captured_at)
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (snapshot_id, item.provider, item.section.value, item.symbol, item.name, item.quantity, item.currency, item.market_value, item.cost_basis, captured_at),
                 )
-                snapshot_id = cur.fetchone()["id"]
-                for item in snapshot.holdings:
-                    cur.execute(
-                        """
-                        insert into portfolio_holdings (snapshot_id, provider, section, symbol, name, quantity, currency, market_value, cost_basis, captured_at)
-                        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (snapshot_id, item.provider, item.section.value, item.symbol, item.name, item.quantity, item.currency, item.market_value, item.cost_basis, captured_at),
-                    )
-                for item in snapshot.cash:
-                    cur.execute(
-                        """
-                        insert into portfolio_cash (snapshot_id, provider, currency, amount, captured_at)
-                        values (%s, %s, %s, %s, %s)
-                        """,
-                        (snapshot_id, item.provider, item.currency, item.amount, captured_at),
-                    )
+            for item in snapshot.cash:
+                cur.execute(
+                    """
+                    insert into portfolio_cash (snapshot_id, provider, currency, amount, captured_at)
+                    values (%s, %s, %s, %s, %s)
+                    """,
+                    (snapshot_id, item.provider, item.currency, item.amount, captured_at),
+                )
             conn.commit()
+            cur.close()
 
     def latest_snapshot(self) -> PortfolioSnapshot | None:
         if not self.configured:
             return None
-        with self.connect() as conn:
-            holdings_rows = conn.execute(
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(
                 """
                 select h.provider, h.section, h.symbol, h.name, h.quantity, h.currency, h.market_value, h.cost_basis
                 from portfolio_holdings h
@@ -161,8 +181,9 @@ class Database:
                 where s.id in (select distinct on (provider) id from portfolio_snapshots order by provider, captured_at desc)
                 order by h.provider, h.symbol
                 """
-            ).fetchall()
-            cash_rows = conn.execute(
+            )
+            holdings_rows = cur.fetchall()
+            cur.execute(
                 """
                 select c.provider, c.currency, c.amount
                 from portfolio_cash c
@@ -170,7 +191,9 @@ class Database:
                 where s.id in (select distinct on (provider) id from portfolio_snapshots order by provider, captured_at desc)
                 order by c.provider, c.currency
                 """
-            ).fetchall()
+            )
+            cash_rows = cur.fetchall()
+            cur.close()
         holdings = [Holding(**row) for row in holdings_rows]
         cash = [CashBalance(**row) for row in cash_rows]
         if not holdings and not cash:
@@ -180,8 +203,9 @@ class Database:
     def portfolio_evolution(self) -> list[dict[str, Any]]:
         if not self.configured:
             return []
-        with self.connect() as conn:
-            return conn.execute(
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(
                 """
                 select date_trunc('day', captured_at) as date, round(sum(value)::numeric, 2) as total_value
                 from (
@@ -192,25 +216,36 @@ class Database:
                 group by date
                 order by date
                 """
-            ).fetchall()
+            )
+            rows = cur.fetchall()
+            cur.close()
+            return rows
 
     def version_log(self) -> list[str]:
         if not self.configured:
             return [f"{version} {title}" for version, title in VERSION_ENTRIES]
-        with self.connect() as conn:
-            rows = conn.execute("select version, title from version_log order by created_at desc, id desc").fetchall()
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("select version, title from version_log order by created_at desc, id desc")
+            rows = cur.fetchall()
+            cur.close()
         return [f"{row['version']} {row['title']}" for row in rows]
 
     def add_conversation(self, role: str, content: str) -> None:
         if not self.configured:
             return
-        with self.connect() as conn:
-            conn.execute("insert into genai_conversations (role, content) values (%s, %s)", (role, content))
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("insert into genai_conversations (role, content) values (%s, %s)", (role, content))
             conn.commit()
+            cur.close()
 
     def conversation(self, limit: int = 12) -> list[dict[str, str]]:
         if not self.configured:
             return []
-        with self.connect() as conn:
-            rows = conn.execute("select role, content from genai_conversations order by created_at desc limit %s", (limit,)).fetchall()
+        with self._connection() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("select role, content from genai_conversations order by created_at desc limit %s", (limit,))
+            rows = cur.fetchall()
+            cur.close()
         return list(reversed(rows))
