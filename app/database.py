@@ -55,7 +55,7 @@ class Database:
         if not self.url:
             raise RuntimeError("DATABASE_URL or SUPABASE_DB_URL is required for database features.")
         try:
-            return psycopg2.connect(self.url)
+            return psycopg2.connect(self.url, connect_timeout=10)
         except Exception as exc:
             raise AppError("Database", "opening PostgreSQL connection", f"{type(exc).__name__}: {exc}", exc) from exc
 
