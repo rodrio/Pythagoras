@@ -3,7 +3,7 @@ import traceback
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -123,7 +123,8 @@ async def upload_degiro(report_type: str = Form(...), file: UploadFile = File(..
 @app.get("/config", response_class=HTMLResponse)
 async def config_page(request: Request, saved: str | None = None):
     db = database()
-    return templates.TemplateResponse(request=request, name="config.html", context={"settings": runtime_settings(db), "rows": db.config_rows(), "saved": saved == "1", "db_configured": db.configured})
+    settings = get_settings()
+    return templates.TemplateResponse(request=request, name="config.html", context={"settings": runtime_settings(db), "rows": db.config_rows(), "saved": saved == "1", "db_configured": db.configured, "available_providers": settings.available_genai_providers})
 
 
 @app.post("/config")
@@ -184,3 +185,41 @@ async def asset_compare(request: Request, symbol: str, currency: str | None = No
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/genai/models")
+async def get_genai_models(provider: str):
+    settings = get_settings()
+    models = []
+    
+    if provider == "google" and settings.google_api_key:
+        try:
+            import google.genai as genai_google
+            client = genai_google.Client(api_key=settings.google_api_key)
+            for model in client.models.list():
+                if "generateContent" in model.supported_actions:
+                    models.append(model.name)
+        except Exception as exc:
+            logger.error("Failed to fetch Google models: %s", exc)
+            return JSONResponse(content={"error": str(exc)}, status_code=500)
+    elif provider == "openai" and settings.openai_api_key:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=settings.openai_api_key)
+            response = client.models.list()
+            models = [model.id for model in response.data if model.id.startswith("gpt-")]
+        except Exception as exc:
+            logger.error("Failed to fetch OpenAI models: %s", exc)
+            return JSONResponse(content={"error": str(exc)}, status_code=500)
+    elif provider == "anthropic" and settings.anthropic_api_key:
+        try:
+            import anthropic
+            client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            models = ["claude-3-5-haiku-20241022", "claude-3-5-sonnet-20241022", "claude-3-5-opus-20241022"]
+        except Exception as exc:
+            logger.error("Failed to fetch Anthropic models: %s", exc)
+            return JSONResponse(content={"error": str(exc)}, status_code=500)
+    else:
+        return JSONResponse(content=[], status_code=200)
+    
+    return JSONResponse(content=models)

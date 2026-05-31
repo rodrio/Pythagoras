@@ -10,9 +10,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _DEFAULT_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 _DEFAULT_ENV_FILE_PATH = str(_DEFAULT_ENV_FILE) if _DEFAULT_ENV_FILE.exists() else None
 
-# Optional override path set from the environment page.
-_CUSTOM_ENV_FILE: str | None = None
-
 
 class Settings(BaseSettings):
     app_env: str = "local"
@@ -39,20 +36,24 @@ class Settings(BaseSettings):
     exchangerate_host_url: str = "https://api.exchangerate.host"
     model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore")
 
+    @property
+    def available_genai_providers(self) -> list[str]:
+        providers = []
+        if self.google_api_key:
+            providers.append("google")
+        if self.openai_api_key:
+            providers.append("openai")
+        if self.anthropic_api_key:
+            providers.append("anthropic")
+        return providers
+
 
 @lru_cache
 def _get_settings_impl() -> Settings:
-    env_file = _CUSTOM_ENV_FILE or _DEFAULT_ENV_FILE_PATH
-    if env_file:
-        return Settings(_env_file=env_file, _env_file_encoding="utf-8")
+    if _DEFAULT_ENV_FILE_PATH:
+        return Settings(_env_file=_DEFAULT_ENV_FILE_PATH, _env_file_encoding="utf-8")
     return Settings()
 
 
 def get_settings() -> Settings:
     return _get_settings_impl()
-
-
-def set_env_file(path: str | None) -> None:
-    global _CUSTOM_ENV_FILE
-    _CUSTOM_ENV_FILE = path
-    _get_settings_impl.cache_clear()

@@ -14,13 +14,78 @@
         <h2>{{ topic.replace('_', ' ')|title }}</h2>
         <div class="grid two">
           {% for row in rows if row.topic == topic %}
+          {% if row.key == 'genai_provider' %}
+          <label class="stack"><span>{{ row.key }}</span>
+            <select name="{{ row.key }}" id="genai_provider" onchange="loadModels()">
+              <option value="disabled" {% if row.value == 'disabled' %}selected{% endif %}>Disabled</option>
+              <option value="google" {% if row.value == 'google' %}selected{% endif %}>Google</option>
+              <option value="openai" {% if row.value == 'openai' %}selected{% endif %}>OpenAI</option>
+              <option value="anthropic" {% if row.value == 'anthropic' %}selected{% endif %}>Anthropic</option>
+            </select>
+          </label>
+          {% elif row.key == 'genai_model' %}
+          <label class="stack"><span>{{ row.key }}</span>
+            <select name="{{ row.key }}" id="genai_model">
+              <option value="">{{ row.value or 'Select a provider first' }}</option>
+            </select>
+          </label>
+          {% else %}
           <label class="stack"><span>{{ row.key }}</span>{% if 'prompt' in row.key or row.key == 'chat_extra_context' %}<textarea name="{{ row.key }}" rows="5">{{ row.value }}</textarea>{% else %}<input name="{{ row.key }}" value="{{ row.value }}" {% if row.is_secret %}type="password" autocomplete="off"{% endif %}>{% endif %}</label>
+          {% endif %}
           {% endfor %}
         </div>
       </section>
       {% endfor %}
       <button>Save all configuration</button>
     </form>
+    <script>
+    const availableProviders = {{ available_providers | tojson }};
+    document.addEventListener('DOMContentLoaded', function() {
+      const providerSelect = document.getElementById('genai_provider');
+      const modelSelect = document.getElementById('genai_model');
+      
+      // Filter provider options to only show those with API keys
+      Array.from(providerSelect.options).forEach(option => {
+        if (option.value !== 'disabled' && !availableProviders.includes(option.value)) {
+          option.disabled = true;
+          option.text += ' (no API key)';
+        }
+      });
+      
+      // Load models for current provider
+      loadModels();
+    });
+    
+    async function loadModels() {
+      const provider = document.getElementById('genai_provider').value;
+      const modelSelect = document.getElementById('genai_model');
+      modelSelect.innerHTML = '<option value="">Loading...</option>';
+      
+      if (provider === 'disabled') {
+        modelSelect.innerHTML = '<option value="">GenAI disabled</option>';
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/genai/models?provider=${provider}`);
+        const models = await response.json();
+        
+        modelSelect.innerHTML = '';
+        if (models.length === 0) {
+          modelSelect.innerHTML = '<option value="">No models available</option>';
+        } else {
+          models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.text = model;
+            modelSelect.appendChild(option);
+          });
+        }
+      } catch (error) {
+        modelSelect.innerHTML = '<option value="">Failed to load models</option>';
+      }
+    }
+    </script>
   </main>
 </body>
 </html>

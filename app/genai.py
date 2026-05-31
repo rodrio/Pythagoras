@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import anthropic
-import google.generativeai as genai_google
+import google.genai as genai_google
 from openai import OpenAI
 
 from app.errors import AppError
@@ -164,10 +164,9 @@ User request: {user_message}
         return f"Asset symbol not found in current portfolio: {symbol}"
 
     def _google(self, prompt: str) -> str:
-        genai_google.configure(api_key=self.settings.google_api_key)
+        client = genai_google.Client(api_key=self.settings.google_api_key)
         model_name = self.settings.genai_model or "gemini-1.5-flash"
-        model = genai_google.GenerativeModel(model_name)
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model=model_name, contents=prompt)
         return response.text or "No response from Google model."
 
     def _openai(self, prompt: str) -> str:
